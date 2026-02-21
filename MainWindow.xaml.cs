@@ -1,129 +1,70 @@
 using System;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using TextDock.Models;
+using TextDock.ViewModels;
 
 namespace TextDock;
 
 public partial class MainWindow : Window
 {
-    private const string WatchedDirectory = @"C:\TextDockFiles";
-    private const double IconWidth = 64;
-    private const double IconHeight = 80;
-    private const double IconSpacing = 16;
-
-    public ObservableCollection<FileItem> FileItems { get; } = new();
+    private readonly MainViewModel _viewModel = new();
 
     public MainWindow()
     {
         InitializeComponent();
-        DataContext = this;
+        DataContext = _viewModel;
         Loaded += MainWindow_Loaded;
         SizeChanged += MainWindow_SizeChanged;
+        Closed += MainWindow_Closed;
     }
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
-        LoadFiles();
-        ArrangeFileItems();
+        _viewModel.Initialize();
+        _viewModel.ArrangeFileItems(GetAvailableWidth());
     }
 
     private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        ArrangeFileItems();
+        _viewModel.ArrangeFileItems(GetAvailableWidth());
     }
 
-    private void LoadFiles()
+    private void MainWindow_Closed(object? sender, EventArgs e)
     {
-        FileItems.Clear();
-
-        if (!Directory.Exists(WatchedDirectory))
-        {
-            return;
-        }
-
-        foreach (var filePath in Directory.EnumerateFiles(WatchedDirectory, "*.txt"))
-        {
-            var fileItem = new FileItem
-            {
-                FullPath = filePath,
-                FileName = Path.GetFileName(filePath)
-            };
-
-            FileItems.Add(fileItem);
-        }
+        _viewModel.Dispose();
     }
 
-    private void ArrangeFileItems()
+    private double GetAvailableWidth()
     {
-        if (FileItems.Count == 0)
+        var width = IconCanvas.ActualWidth;
+
+        if (width <= 0)
         {
-            return;
+            width = Math.Max(0, ActualWidth
+                - WindowBorder.BorderThickness.Left - WindowBorder.BorderThickness.Right
+                - IconCanvas.Margin.Left - IconCanvas.Margin.Right);
         }
 
-        var availableWidth = IconCanvas.ActualWidth;
-
-        if (availableWidth <= 0)
-        {
-            availableWidth = Math.Max(0, ActualWidth - WindowBorder.BorderThickness.Left - WindowBorder.BorderThickness.Right - IconCanvas.Margin.Left - IconCanvas.Margin.Right);
-        }
-
-        availableWidth = Math.Max(IconWidth, availableWidth);
-
-        var columns = Math.Max(1, (int)Math.Floor((availableWidth + IconSpacing) / (IconWidth + IconSpacing)));
-
-        for (var index = 0; index < FileItems.Count; index++)
-        {
-            var column = index % columns;
-            var row = index / columns;
-
-            var x = column * (IconWidth + IconSpacing);
-            var y = row * (IconHeight + IconSpacing);
-
-            FileItems[index].X = x;
-            FileItems[index].Y = y;
-        }
+        return width;
     }
 
     private void FileIconControl_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (sender is not FrameworkElement element || element.DataContext is not FileItem fileItem)
+        if (sender is FrameworkElement { DataContext: FileItem fileItem })
         {
-            return;
+            _viewModel.SelectFile(fileItem);
+            e.Handled = true;
         }
-
-        foreach (var item in FileItems)
-        {
-            item.IsSelected = item == fileItem;
-        }
-
-        e.Handled = true;
     }
 
     private void FileIconControl_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        if (sender is not FrameworkElement element || element.DataContext is not FileItem fileItem)
+        if (sender is FrameworkElement { DataContext: FileItem fileItem })
         {
-            return;
+            _viewModel.OpenFile(fileItem);
+            e.Handled = true;
         }
-
-        try
-        {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = fileItem.FullPath,
-                UseShellExecute = true
-            });
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(this, $"Unable to open file:\n{ex.Message}", "TextDock", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-
-        e.Handled = true;
     }
 
     private void Border_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
