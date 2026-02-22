@@ -47,7 +47,7 @@ dotnet publish TextDock.csproj -c Release -r win-x64 --self-contained false
 |---|---|
 | `App.xaml / App.xaml.cs` | Application entry point and shell |
 | `MainWindow.xaml / .cs` | Top-level window and event routing |
-| `Controls/FileIconControl.xaml` | Reusable icon tile (file badge + label) |
+| `Controls/FileIconControl.xaml / FileIconControl.xaml.cs` | Reusable icon tile (file badge + label) |
 | `Models/FileItem.cs` | View-model backing each icon |
 | `ViewModels/MainViewModel.cs` | File loading, `FileSystemWatcher`, grid layout |
 
