@@ -6,11 +6,10 @@
              mc:Ignorable="d"
              Width="64"
              Height="80">
-    <Grid>
+    <Grid Background="Transparent">
         <Border x:Name="SelectionHighlight"
                 CornerRadius="6"
-                Background="#80FFE4B5"
-                Opacity="0">
+                Background="#80FFE4B5">
             <Border.Style>
                 <Style TargetType="Border">
                     <Setter Property="Opacity" Value="0" />
